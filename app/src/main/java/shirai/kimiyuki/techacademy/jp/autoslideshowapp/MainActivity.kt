@@ -27,12 +27,12 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        myCallback = {
+            setupCursor()
+            setImageToImageView()
+        }
         my_request_permission()
-        //if(isGranted) {
-        setupCursor()
-        setImageToImageView()
         Log.d("hello", "End OnCreate")
-        //}
         //end of flow on Create
 
         //set listeners
