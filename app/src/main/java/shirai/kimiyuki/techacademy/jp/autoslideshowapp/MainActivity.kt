@@ -11,6 +11,7 @@ import android.util.Log
 import android.provider.MediaStore
 import android.content.ContentUris
 import android.database.Cursor
+import android.view.View
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
@@ -20,95 +21,134 @@ class MainActivity : AppCompatActivity() {
     private var cursor: Cursor? = null
     private var isPlaying = false
     private var mTimer: Timer? = null
-    private var mTimeSec = 0.0
-    private var mHandler = Handler()
+    private val mHandler = Handler()
+    private var myCallback: () -> Unit = {}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSIONS_REQUEST_CODE)
-        } else {
-            setupCursor()
-            setImageToImageView()
-        }
-
-        backward_button.setOnClickListener {
-            Log.d("hello", isPlaying.toString())
-            if(isPlaying){
-                Log.d("hello", "aaal")
-                Snackbar.make(it, "再生中です。自動再生を停止してください", 10).show()
-                return@setOnClickListener
-            }
-            if (cursor!!.isFirst) {
-                cursor!!.moveToLast()
-            } else {
-                cursor!!.moveToPrevious()
-            }
-            setImageToImageView()
-        }
-        forward_button.setOnClickListener {
-            Log.d("hello", isPlaying.toString())
-            if(isPlaying){
-                //TODO waringを出す
-                Snackbar.make(it, "再生中です。自動再生を停止してください", 10).show()
-                return@setOnClickListener
-            }
-            if (cursor!!.isLast) {
-                cursor!!.moveToFirst()
-            } else {
-                cursor!!.moveToNext()
-            }
-            setImageToImageView()
-        }
-        toggle_button.setOnClickListener {
-            toggle_button.text = if (isPlaying) "再生" else "停止"
-            isPlaying = !isPlaying
-            if (isPlaying) {
-                if (mTimer != null) {
-                    return@setOnClickListener
-                }
-                mTimer = Timer()
-                mTimer!!.schedule(object : TimerTask() {
-                    override fun run() {
-                        mHandler.post {
-                            if(cursor!!.isLast) {
-                                cursor!!.moveToFirst()
-                            }else{
-                                cursor!!.moveToNext()
-                            }
-                            setImageToImageView()
-                        }
-                    }
-                }, 2000, 2000)
-            }else{
-                if(mTimer != null) {
-                    mTimer!!.cancel()
-                    mTimer = null
-                }
-            }
-        }
-
+        my_request_permission()
+        //if(isGranted) {
+        setupCursor()
+        setImageToImageView()
         Log.d("hello", "End OnCreate")
+        //}
+        //end of flow on Create
+
+        //set listeners
+        backward_button.setOnClickListener {
+            myCallback = { back_image(it) }
+            my_request_permission()
+        }
+
+        forward_button.setOnClickListener {
+            myCallback = { forward_image(it) }
+            my_request_permission()
+        }
+
+        play_stop_button.setOnClickListener {
+            myCallback = { play_stop(it) }
+            my_request_permission()
+        }
+
     }
 
+    private fun my_request_permission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val ret = checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (ret != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PERMISSIONS_REQUEST_CODE)
+            } else {
+                myCallback()
+            }
+        } else {
+            myCallback()
+        }
+    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         Log.d("hello", "onReqPermission:${requestCode}")
-        when (requestCode) {
-            PERMISSIONS_REQUEST_CODE ->
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    setupCursor()
-                    setImageToImageView()
-                }
+        if (requestCode != PERMISSIONS_REQUEST_CODE) return
+        if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            myCallback()
+        }
+    }
+
+    private fun back_image(v: View): Unit {
+        Log.d("hello", "start back_image")
+//        if (!isGranted) {
+//            Snackbar.make(v, "権限が必要です", 3000).show()
+//            return
+//        }
+//        Log.d("hello", isPlaying.toString())
+        if (isPlaying) {
+            val snack = Snackbar.make(v, "再生中です。停止してからです", 3000)
+            snack.setAction("了解") { /*no response*/ }.show()
+            return
+        }
+        if (cursor!!.isFirst) cursor?.moveToLast() else cursor?.moveToPrevious()
+        setImageToImageView()
+    }
+
+    private fun forward_image(v: View) {
+        Log.d("hello", "start forward_image")
+//        if (!isGranted) {
+//            Snackbar.make(v, "権限が必要です", 3000).show()
+//            return
+//        }
+//        Log.d("hello", isPlaying.toString())
+        if (isPlaying) {
+            val snack = Snackbar.make(v, "再生中です。停止を押してからです", 3000)
+            snack.setAction("了解") {}
+            snack.show()
+            Log.d("hello", "isplaying")
+            //it.animate().rotation(180.0f).alpha(1.0f).setDuration(300).start()
+            return
+        }
+        if (cursor!!.isLast) cursor?.moveToFirst() else cursor?.moveToNext()
+        setImageToImageView()
+    }
+
+    private fun play_stop(v: View) {
+//        if(!isGranted) {
+//            Snackbar.make(v, "権限が必要です", 3000).show()
+//            return
+//        }
+        play_stop_button.text = if (isPlaying) "再生" else "停止"
+        isPlaying = !isPlaying
+        if (isPlaying) {
+            if (mTimer != null) {
+                return
+            }
+            Snackbar.make(v, "再生します", 1000).show()
+            mTimer = Timer()
+            mTimer!!.schedule(
+                object : TimerTask() {
+                    override fun run() {
+                        mHandler.post {
+                            if (cursor!!.isLast) cursor?.moveToFirst() else cursor?.moveToNext()
+                            setImageToImageView()
+                        }
+                    }
+                },
+                2000, 2000
+            )
+        } else {
+            if (mTimer != null) {
+                Snackbar.make(v, "停止します", 1000).show()
+                mTimer!!.cancel()
+                mTimer = null
+            }
         }
     }
 
 
+    override fun onDestroy() {
+        super.onDestroy()
+        cursor?.close()
+    }
+
     private fun setupCursor() {
-        if (cursor != null) cursor!!.close()
         val resolver = contentResolver
         cursor = resolver.query(
             MediaStore.Images.Media.EXTERNAL_CONTENT_URI, // データの種類
@@ -117,15 +157,20 @@ class MainActivity : AppCompatActivity() {
             null, // フィルタ用パラメータ
             null // ソート (null ソートなし)
         )
-        cursor!!.moveToFirst()
-        Log.d("hello", "setupCursor:${cursor!!.position}")
+        cursor?.moveToFirst()
+        Log.d("hello", "setupCursor:${cursor?.position}")
     }
 
     private fun setImageToImageView() {
         val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-        val id = cursor!!.getLong(fieldIndex)
-        val imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
-        imageView.setImageURI(imageUri)
-        Log.d("hello setImage", "URI : " + imageUri.toString())
+        Log.d("hello fieldIndex", "${fieldIndex}")
+        if (cursor!!.count > 0) {
+            val id = cursor!!.getLong(fieldIndex)
+            val imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
+            imageView.setImageURI(imageUri)
+            Log.d("hello setImage", "URI : " + imageUri.toString())
+        } else {
+            //TODO not image
+        }
     }
 }
