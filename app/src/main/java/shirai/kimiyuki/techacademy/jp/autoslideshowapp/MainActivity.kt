@@ -74,13 +74,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun back_image(v: View): Unit {
+    private fun back_image(v: View) {
         Log.d("hello", "start back_image")
-//        if (!isGranted) {
-//            Snackbar.make(v, "権限が必要です", 3000).show()
-//            return
-//        }
-//        Log.d("hello", isPlaying.toString())
         if (isPlaying) {
             val snack = Snackbar.make(v, "再生中です。停止してからです", 3000)
             snack.setAction("了解") { /*no response*/ }.show()
@@ -92,11 +87,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun forward_image(v: View) {
         Log.d("hello", "start forward_image")
-//        if (!isGranted) {
-//            Snackbar.make(v, "権限が必要です", 3000).show()
-//            return
-//        }
-//        Log.d("hello", isPlaying.toString())
         if (isPlaying) {
             val snack = Snackbar.make(v, "再生中です。停止を押してからです", 3000)
             snack.setAction("了解") {}
@@ -110,10 +100,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun play_stop(v: View) {
-//        if(!isGranted) {
-//            Snackbar.make(v, "権限が必要です", 3000).show()
-//            return
-//        }
         play_stop_button.text = if (isPlaying) "再生" else "停止"
         isPlaying = !isPlaying
         if (isPlaying) {
@@ -163,14 +149,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setImageToImageView() {
         val fieldIndex = cursor!!.getColumnIndex(MediaStore.Images.Media._ID)
-        Log.d("hello fieldIndex", "${fieldIndex}")
+        Log.d("hello cursor count", "${cursor?.count}")
         if (cursor!!.count > 0) {
             val id = cursor!!.getLong(fieldIndex)
             val imageUri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
             imageView.setImageURI(imageUri)
             Log.d("hello setImage", "URI : " + imageUri.toString())
         } else {
-            //TODO not image
+            //TODO no image
         }
     }
 }
