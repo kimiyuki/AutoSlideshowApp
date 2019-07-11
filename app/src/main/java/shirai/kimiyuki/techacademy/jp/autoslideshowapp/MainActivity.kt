@@ -75,6 +75,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun back_image(v: View) {
+        if(cursor == null) setupCursor()
         Log.d("hello", "start back_image")
         if (isPlaying) {
             val snack = Snackbar.make(v, "再生中です。停止してからです", 3000)
@@ -87,6 +88,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun forward_image(v: View) {
         Log.d("hello", "start forward_image")
+        if(cursor == null) setupCursor()
         if (isPlaying) {
             val snack = Snackbar.make(v, "再生中です。停止を押してからです", 3000)
             snack.setAction("了解") {}
@@ -100,6 +102,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun play_stop(v: View) {
+        if(cursor == null) setupCursor()
         play_stop_button.text = if (isPlaying) "再生" else "停止"
         isPlaying = !isPlaying
         if (isPlaying) {
